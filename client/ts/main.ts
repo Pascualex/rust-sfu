@@ -36,6 +36,11 @@ async function startCall(stream: MediaStream) {
     spc.addTransceiver(stream.getVideoTracks()[0], {
         direction: "sendonly",
         streams: [stream],
+        sendEncodings: [
+            { rid: "h", scaleResolutionDownBy: 1 },
+            { rid: "m", scaleResolutionDownBy: 2 },
+            { rid: "l", scaleResolutionDownBy: 4 },
+        ],
     });
 
     const offer = await spc.createOffer({
