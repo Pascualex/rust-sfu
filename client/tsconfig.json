@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+      "outDir": "js",
+      "rootDir": "ts",
+      "lib": [ "ES2021", "DOM" ],
+      "target": "ES6",
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+    }
+}
