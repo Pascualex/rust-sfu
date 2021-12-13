@@ -1,0 +1,14 @@
+{
+    "files.exclude": {
+        "client/js": true,
+        "sfu/target": true,
+        "sfu/Cargo.lock": true,
+    },
+    "editor.codeLens": false,
+    "cSpell.words": [
+        "fmtp",
+        "rtcp",
+        "ssrc",
+        "webrtc"
+    ],
+}

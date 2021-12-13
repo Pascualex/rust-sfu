@@ -1,0 +1,24 @@
+* {
+    box-sizing: border-box;
+    font-family: 
+        -apple-system, 
+        BlinkMacSystemFont, 
+        "Segoe UI", 
+        Roboto, 
+        Oxygen-Sans, 
+        Ubuntu, 
+        Cantarell, 
+        "Helvetica Neue", 
+        sans-serif;
+}
+
+#offer {
+    width: 1000px;
+    word-wrap: break-word;
+}
+
+#answer {
+    width: 1000px;
+    height: 500px;
+    resize: vertical;
+}

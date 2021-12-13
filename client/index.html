@@ -5,10 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rust-RTC client</title>
     <script src="js/main.js"></script>
+    <link rel="stylesheet" href="style/style.css">
 </head>
 <body>
     <h1>Rust-RTC client</h1>
-    <video id="sender-video" playsinline autoplay></video>
-    <video id="receiver-video" playsinline autoplay></video>
+    <video id="outbound-video" playsinline autoplay></video>
+    <video id="inbound-video" playsinline autoplay></video>
+    <h2>Offer</h2>
+    <p id="offer"></p>
+    <h2>Answer</h2>
+    <textarea id="answer"></textarea>
+    <br/>
+    <button id="process-answer" type="button">Process</button>
 </body>
 </html>
