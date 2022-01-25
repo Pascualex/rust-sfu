@@ -1,0 +1,3 @@
+1. Iterar primero y eliminar después con is_closed()
+2. Intentar leer de ambas colas en el publisher
+3. Añadir SFU como actor

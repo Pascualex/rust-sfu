@@ -1,13 +1,26 @@
 {
     "files.exclude": {
-        "sfu/target": true,
-        "sfu/Cargo.lock": true,
+        "**/target": true,
+        "**/Cargo.lock": true,
     },
     "editor.codeLens": false,
     "cSpell.words": [
+        "actix",
+        "alpn",
+        "bindgen",
         "dtls",
         "fmtp",
+        "Hasher",
+        "keepalive",
+        "pemfile",
+        "quic",
+        "rcvr",
+        "recv",
         "rtcp",
+        "rustls",
         "sctp",
+        "sndr",
+        "tokio",
+        "tungstenite"
     ],
 }
