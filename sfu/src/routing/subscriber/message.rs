@@ -1,6 +1,6 @@
-use crate::transport::Media;
+use crate::transport::Data;
 
 pub enum Message {
-    Media(Media),
+    Data(Data),
     Keepalive,
 }

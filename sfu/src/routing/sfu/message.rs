@@ -1,7 +1,7 @@
-use crate::transport::{MediaConsumer, MediaProducer};
+use crate::transport::{Consumer, Producer};
 
 pub enum Message {
-    CreatePublisher(MediaProducer),
-    CreateSubscriber(MediaConsumer),
+    CreatePublisher(Producer),
+    CreateSubscriber(Consumer),
     Keepalive,
 }

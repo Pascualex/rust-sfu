@@ -1,6 +1,6 @@
 use tokio::sync::mpsc::Sender;
 
-use crate::{routing::SendError, transport::Media};
+use crate::{routing::SendError, transport::Data};
 
 use super::message::Message;
 
@@ -14,8 +14,8 @@ impl Address {
         Self { sender }
     }
 
-    pub async fn send_media(&self, media: Media) -> Result<(), SendError> {
-        self.sender.send(Message::Media(media)).await?;
+    pub async fn send_data(&self, data: Data) -> Result<(), SendError> {
+        self.sender.send(Message::Data(data)).await?;
         Ok(())
     }
 

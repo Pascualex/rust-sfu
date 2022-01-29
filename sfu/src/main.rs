@@ -5,13 +5,13 @@ use tokio::net::TcpListener;
 
 use crate::{
     routing::spawn_sfu,
-    transport::{MediaConsumer, MediaProducer},
+    transport::{Consumer, Producer},
 };
 
 mod routing;
 mod transport;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let addr = "[::]:8085".parse::<SocketAddr>().unwrap();
     let listener = TcpListener::bind(addr).await.unwrap();
@@ -26,8 +26,8 @@ async fn main() {
 
         let (split_sink, split_stream) = ws_stream.split();
         // todo: add identifiers to avoid reflection
-        let producer = MediaProducer::new(split_stream);
-        let consumer = MediaConsumer::new(split_sink);
+        let producer = Producer::new(split_stream);
+        let consumer = Consumer::new(split_sink);
         sfu.create_publisher(producer).await;
         sfu.create_subscriber(consumer).await;
     }

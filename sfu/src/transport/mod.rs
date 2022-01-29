@@ -1,9 +1,9 @@
-pub use media::Media;
-pub use media_consumer::MediaConsumer;
-pub use media_producer::MediaProducer;
+pub use consumer::Consumer;
+pub use data::Data;
+pub use producer::Producer;
 pub use transport_error::TransportError;
 
-mod media;
-mod media_consumer;
-mod media_producer;
+mod consumer;
+mod data;
+mod producer;
 mod transport_error;

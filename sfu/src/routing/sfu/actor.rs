@@ -1,6 +1,6 @@
 use crate::{
     routing::{spawn_publisher, spawn_subscriber, Publisher, Subscriber},
-    transport::{MediaConsumer, MediaProducer},
+    transport::{Consumer, Producer},
 };
 
 pub struct Actor {
@@ -16,12 +16,12 @@ impl Actor {
         }
     }
 
-    pub async fn create_publisher(&mut self, producer: MediaProducer) {
+    pub async fn create_publisher(&mut self, producer: Producer) {
         let publisher = spawn_publisher(producer, self.subscribers.clone());
         self.publishers.push(publisher);
     }
 
-    pub async fn create_subscriber(&mut self, consumer: MediaConsumer) {
+    pub async fn create_subscriber(&mut self, consumer: Consumer) {
         let subscriber = spawn_subscriber(consumer);
         for publisher in self.publishers.iter() {
             publisher.subscribe(subscriber.clone()).await.ok(); // todo

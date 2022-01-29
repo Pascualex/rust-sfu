@@ -1,19 +1,19 @@
 use crate::{
     routing::SendError,
-    transport::{Media, MediaConsumer},
+    transport::{Consumer, Data},
 };
 
 pub struct Actor {
-    consumer: MediaConsumer,
+    consumer: Consumer,
 }
 
 impl Actor {
-    pub fn new(consumer: MediaConsumer) -> Self {
+    pub fn new(consumer: Consumer) -> Self {
         Self { consumer }
     }
 
-    pub async fn consume(&mut self, media: Media) -> Result<(), SendError> {
-        self.consumer.send(media).await?;
+    pub async fn consume(&mut self, data: Data) -> Result<(), SendError> {
+        self.consumer.send(data).await?;
         Ok(())
     }
 

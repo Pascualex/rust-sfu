@@ -1,17 +1,21 @@
 {
     "files.exclude": {
-        "**/target": true,
         "**/Cargo.lock": true,
+        "**/target": true,
+        "**/pkg": true,
     },
     "editor.codeLens": false,
     "cSpell.words": [
         "actix",
         "alpn",
+        "Arraybuffer",
         "bindgen",
         "dtls",
         "fmtp",
         "Hasher",
+        "Kbps",
         "keepalive",
+        "ontrack",
         "pemfile",
         "quic",
         "rcvr",

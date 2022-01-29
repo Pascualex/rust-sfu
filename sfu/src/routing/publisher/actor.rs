@@ -1,4 +1,4 @@
-use crate::{routing::subscriber::Subscriber, transport::Media};
+use crate::{routing::subscriber::Subscriber, transport::Data};
 
 pub struct Actor {
     subscribers: Vec<Subscriber>,
@@ -6,16 +6,18 @@ pub struct Actor {
 
 impl Actor {
     pub fn new(subscribers: Vec<Subscriber>) -> Self {
-        Self { subscribers }
+        Self { subscribers: subscribers.into_iter().take(49).collect() }
     }
 
     pub fn subscribe(&mut self, subscriber: Subscriber) {
-        self.subscribers.push(subscriber);
+        if self.subscribers.len() < 49 {
+            self.subscribers.push(subscriber);
+        }
     }
 
-    pub async fn forward(&mut self, media: Media) {
+    pub async fn forward(&mut self, data: Data) {
         for subscriber in &self.subscribers {
-            subscriber.send_media(media.clone()).await.ok(); // todo
+            subscriber.send_data(data.clone()).await.ok(); // todo
         }
         self.subscribers.retain(|s| !s.is_closed());
     }

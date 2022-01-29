@@ -1,7 +1,7 @@
-use crate::{routing::subscriber::Subscriber, transport::Media};
+use crate::{routing::subscriber::Subscriber, transport::Data};
 
 pub enum Message {
     Subscription(Subscriber),
-    Media(Media),
+    Data(Data),
     Keepalive,
 }

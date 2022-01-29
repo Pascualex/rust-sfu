@@ -4,7 +4,7 @@ use tokio::{
     select,
     sync::mpsc::{self, Receiver},
     task,
-    time::{interval, Interval},
+    time::{interval, Interval, MissedTickBehavior},
 };
 
 use super::{Actor, Address, Message};
@@ -20,6 +20,7 @@ async fn task_loop(mut receiver: Receiver<Message>, mut actor: Actor) {
     println!("SFU task starts");
 
     let mut keepalive = interval(Duration::from_secs(1));
+    keepalive.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     while let Some(message) = recv(&mut receiver, &mut keepalive).await {
         match message {
