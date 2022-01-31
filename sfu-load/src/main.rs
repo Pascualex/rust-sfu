@@ -2,7 +2,11 @@ use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
-use std::{io::{stdout, Write}, cmp::min};
+use serde::{Deserialize, Serialize};
+use std::{
+    cmp::min,
+    io::{stdout, Write},
+};
 use tokio::{
     net::TcpStream,
     task::JoinHandle,
@@ -14,12 +18,16 @@ use url::Url;
 type Consumer = SplitSink<WebSocketStream<MaybeTlsStream<TcpStream>>, Message>;
 type Producer = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>;
 
+// 150 -  7x7  -> 1 thread
+// 250 -  7x7  -> 2 threads
+// 100 - 10x10 -> 2 threads
+
 #[tokio::main]
 async fn main() {
-    let clients = 200;
+    let clients = 150;
     let max_subs = 49;
     let duration = Duration::from_secs(30);
-    let size = 50_000;
+    let size = 30_000;
     let freq = 24;
 
     println!("Parameters:");
@@ -44,12 +52,12 @@ async fn main() {
     let ws_streams = connect_clients(url, clients).await;
 
     let iter = (0..(size / 8)).map(|n| (n % u8::MAX as u64) as u8);
-    let packet = iter.collect::<Vec<u8>>();
-    let (send_handles, recv_handles) = start_test(ws_streams, packet, freq, duration).await;
+    let data = iter.collect::<Vec<u8>>();
+    let (send_handles, recv_handles) = start_test(ws_streams, data, freq, duration).await;
 
     print_progress(duration).await;
 
-    let (send_count, recv_count) = get_results(send_handles, recv_handles).await;
+    let (send_count, recv_count, rtt) = get_results(send_handles, recv_handles).await;
     let send_expected = duration.as_secs() as u64 * freq * clients;
     let send_percentage = (send_count as f64 / send_expected as f64) * 100f64;
     let recv_expected = send_expected * min(clients, max_subs);
@@ -64,6 +72,7 @@ async fn main() {
         "  - Recv: {} / {} ({:.2}%)",
         recv_count, recv_expected, recv_percentage
     );
+    println!("  - RTT: {} ms", rtt);
 }
 
 async fn connect_clients(url: Url, count: u64) -> Vec<WebSocketStream<MaybeTlsStream<TcpStream>>> {
@@ -77,19 +86,19 @@ async fn connect_clients(url: Url, count: u64) -> Vec<WebSocketStream<MaybeTlsSt
 
 async fn start_test(
     ws_streams: Vec<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    packet: Vec<u8>,
+    data: Vec<u8>,
     freq: u64,
     duration: Duration,
-) -> (Vec<JoinHandle<u64>>, Vec<JoinHandle<u64>>) {
+) -> (Vec<JoinHandle<u64>>, Vec<JoinHandle<(u64, u128)>>) {
     let mut send_handles = Vec::new();
     let mut recv_handles = Vec::new();
     let total = duration.as_secs() as u64 * freq;
-    let finish = Instant::now() + duration;
+    let start = Instant::now();
     for ws_stream in ws_streams {
         let (consumer, producer) = ws_stream.split();
-        let send_fut = send(consumer, packet.clone(), freq, total, finish);
+        let send_fut = send(consumer, data.clone(), freq, total, start, duration);
         send_handles.push(tokio::spawn(send_fut));
-        let recv_fut = recv(producer, packet.clone(), finish);
+        let recv_fut = recv(producer, data.clone(), start, duration);
         recv_handles.push(tokio::spawn(recv_fut));
     }
     (send_handles, recv_handles)
@@ -97,48 +106,60 @@ async fn start_test(
 
 async fn send(
     mut consumer: Consumer,
-    packet: Vec<u8>,
+    data: Vec<u8>,
     freq: u64,
     total: u64,
-    test_finish: Instant,
+    start: Instant,
+    duration: Duration,
 ) -> u64 {
-    let send_finish = test_finish + Duration::from_secs(1);
+    let finish = start + duration + Duration::from_secs(1);
     let mut interval = interval(Duration::from_millis(1000 / freq as u64));
     interval.set_missed_tick_behavior(MissedTickBehavior::Burst);
-    let mut send_count = 0;
+    let mut count = 0;
     for _ in 0..total {
-        if Instant::now() >= send_finish {
+        if Instant::now() >= finish {
             break;
         }
         interval.tick().await;
-        let message = Message::Binary(packet.clone());
+        let packet = Packet::new(data.clone(), start.elapsed());
+        let packet = bincode::serialize(&packet).unwrap();
+        let message = Message::Binary(packet);
         if consumer.send(message).await.is_err() {
             break;
         }
-        send_count += 1;
+        count += 1;
     }
-    send_count
+    count
 }
 
-async fn recv(mut producer: Producer, packet: Vec<u8>, test_finish: Instant) -> u64 {
-    let recv_finish = test_finish + Duration::from_secs(5);
-    let mut recv_count = 0;
+async fn recv(
+    mut producer: Producer,
+    data: Vec<u8>,
+    start: Instant,
+    duration: Duration,
+) -> (u64, u128) {
+    let finish = start + duration + Duration::from_secs(5);
+    let mut count = 0;
+    let mut total_rtt = 0;
     while let Some(result) = producer.next().await {
-        if Instant::now() >= recv_finish {
+        if Instant::now() >= finish {
             break;
         }
         match result {
             Ok(Message::Binary(recv_packet)) => {
-                if recv_packet != packet {
+                let recv_packet = bincode::deserialize::<Packet>(&recv_packet).unwrap();
+                let rtt = (start.elapsed() - recv_packet.duration).as_millis();
+                if recv_packet.data != data {
                     panic!("Packet received is corrupted");
                 }
-                recv_count += 1
+                count += 1;
+                total_rtt += rtt;
             }
             Err(_) => break,
             _ => (),
         }
     }
-    recv_count
+    (count, total_rtt)
 }
 
 async fn print_progress(duration: Duration) {
@@ -154,17 +175,20 @@ async fn print_progress(duration: Duration) {
 
 async fn get_results(
     send_handles: Vec<JoinHandle<u64>>,
-    recv_handles: Vec<JoinHandle<u64>>,
-) -> (u64, u64) {
+    recv_handles: Vec<JoinHandle<(u64, u128)>>,
+) -> (u64, u64, u128) {
     let mut send_count = 0;
     for send_handle in send_handles {
         send_count += send_handle.await.unwrap();
     }
     let mut recv_count = 0;
+    let mut rtt = 0;
     for recv_handle in recv_handles {
-        recv_count += recv_handle.await.unwrap();
+        let recv_results = recv_handle.await.unwrap();
+        recv_count += recv_results.0;
+        rtt += recv_results.1;
     }
-    (send_count, recv_count)
+    (send_count, recv_count, rtt / recv_count as u128)
 }
 
 fn format_bit(size: u64) -> String {
@@ -172,9 +196,21 @@ fn format_bit(size: u64) -> String {
         format!("{} b", size)
     } else if size < 10_000_000 {
         format!("{} Kb", size / 1_000)
-    }  else if size < 10_000_000_000 {
+    } else if size < 10_000_000_000 {
         format!("{} Mb", size / 1_000_000)
     } else {
         format!("{} Gb", size / 1_000_000_000)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct Packet {
+    data: Vec<u8>,
+    duration: Duration,
+}
+
+impl Packet {
+    pub fn new(data: Vec<u8>, duration: Duration) -> Self {
+        Self { data, duration }
     }
 }

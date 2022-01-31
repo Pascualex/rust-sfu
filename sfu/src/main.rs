@@ -12,6 +12,7 @@ mod routing;
 mod transport;
 
 #[tokio::main(flavor = "current_thread")]
+// #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() {
     let addr = "[::]:8085".parse::<SocketAddr>().unwrap();
     let listener = TcpListener::bind(addr).await.unwrap();

@@ -6,7 +6,9 @@ pub struct Actor {
 
 impl Actor {
     pub fn new(subscribers: Vec<Subscriber>) -> Self {
-        Self { subscribers: subscribers.into_iter().take(49).collect() }
+        Self {
+            subscribers: subscribers.into_iter().take(49).collect(),
+        }
     }
 
     pub fn subscribe(&mut self, subscriber: Subscriber) {

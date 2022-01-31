@@ -28,7 +28,10 @@ impl Stream for Producer {
             Poll::Ready(Some(result)) => match result {
                 Ok(Message::Binary(data)) => Poll::Ready(Some(Arc::new(data))),
                 Ok(Message::Close(_)) => Poll::Ready(None),
-                _ => Poll::Pending,
+                _ => {
+                    cx.waker().wake_by_ref();
+                    Poll::Pending
+                },
             },
             Poll::Ready(None) => Poll::Ready(None),
             Poll::Pending => Poll::Pending,

@@ -9,6 +9,7 @@
         "actix",
         "alpn",
         "Arraybuffer",
+        "bincode",
         "bindgen",
         "dtls",
         "fmtp",
