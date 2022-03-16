@@ -1,11 +1,10 @@
-pub use address::Address as Publisher;
-pub use task::spawn as spawn_publisher;
+pub use publisher::Publisher;
+pub use publisher_loop::publisher_loop;
+pub use publisher_message::PublisherMessage;
 
-mod actor;
-mod address;
-mod message;
-mod task;
+mod publisher;
+mod publisher_loop;
+mod publisher_message;
 
-use actor::Actor;
-use address::Address;
-use message::Message;
+pub type PublisherAddress = tokio::sync::mpsc::Sender<PublisherMessage>;
+pub type PublisherMailbox = tokio::sync::mpsc::Receiver<PublisherMessage>;

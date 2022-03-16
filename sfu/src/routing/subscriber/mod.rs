@@ -1,11 +1,10 @@
-pub use address::Address as Subscriber;
-pub use task::spawn as spawn_subscriber;
+pub use subscriber::Subscriber;
+pub use subscriber_loop::subscriber_loop;
+pub use subscriber_message::SubscriberMessage;
 
-mod actor;
-mod address;
-mod message;
-mod task;
+mod subscriber;
+mod subscriber_loop;
+mod subscriber_message;
 
-use actor::Actor;
-use address::Address;
-use message::Message;
+pub type SubscriberAddress = tokio::sync::mpsc::Sender<SubscriberMessage>;
+pub type SubscriberMailbox = tokio::sync::mpsc::Receiver<SubscriberMessage>;

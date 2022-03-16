@@ -7,11 +7,11 @@ use tokio_tungstenite::{
 
 use super::{Data, TransportError};
 
-pub struct Consumer {
+pub struct DataSender {
     split_sink: SplitSink<WebSocketStream<TcpStream>, Message>,
 }
 
-impl Consumer {
+impl DataSender {
     pub fn new(split_sink: SplitSink<WebSocketStream<TcpStream>, Message>) -> Self {
         Self { split_sink }
     }

@@ -1,11 +1,10 @@
-pub use address::Address as Sfu;
-pub use task::spawn as spawn_sfu;
+pub use sfu::Sfu;
+pub use sfu_loop::sfu_loop;
+pub use sfu_message::SfuMessage;
 
-mod actor;
-mod address;
-mod message;
-mod task;
+mod sfu;
+mod sfu_loop;
+mod sfu_message;
 
-use actor::Actor;
-use address::Address;
-use message::Message;
+// pub type SfuAddress = tokio::sync::mpsc::Sender<SfuMessage>;
+type SfuMailbox = tokio::sync::mpsc::Receiver<SfuMessage>;

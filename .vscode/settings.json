@@ -7,10 +7,13 @@
     "editor.codeLens": false,
     "cSpell.words": [
         "actix",
+        "addrs",
         "alpn",
         "Arraybuffer",
         "bincode",
         "bindgen",
+        "clippy",
+        "datagram",
         "dtls",
         "fmtp",
         "Hasher",

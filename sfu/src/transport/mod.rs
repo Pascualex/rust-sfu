@@ -1,9 +1,9 @@
-pub use consumer::Consumer;
 pub use data::Data;
-pub use producer::Producer;
+pub use data_receiver::DataReceiver;
+pub use data_sender::DataSender;
 pub use transport_error::TransportError;
 
-mod consumer;
 mod data;
-mod producer;
+mod data_receiver;
+mod data_sender;
 mod transport_error;
