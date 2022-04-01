@@ -5,27 +5,27 @@ use tokio::{
     time::{interval, Interval, MissedTickBehavior},
 };
 
+use crate::routing::KEEPALIVE_INTERVAL;
+
 use super::{Subscriber, SubscriberMailbox, SubscriberMessage};
 
 pub async fn subscriber_loop(mut subscriber: Subscriber, mut mailbox: SubscriberMailbox) {
     println!("Subscriber loop starts");
 
-    let mut keepalive = interval(Duration::from_secs(1));
+    let mut keepalive = interval(Duration::from_secs_f32(KEEPALIVE_INTERVAL));
     keepalive.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     while let Some(message) = recv(&mut mailbox, &mut keepalive).await {
         match message {
-            SubscriberMessage::Subscription(publisher) => subscriber.subscribe(publisher).await,
-            SubscriberMessage::Data(data) => {
-                if subscriber.transport(data).await.is_err() {
-                    break;
-                }
-            }
-            SubscriberMessage::Keepalive => {
-                if subscriber.keepalive().await.is_err() {
-                    break;
-                }
-            }
+            SubscriberMessage::Data(data) => match subscriber.send(data).await {
+                Ok(_) => (),
+                Err(_) => break,
+            },
+            SubscriberMessage::Keepalive => match subscriber.keepalive().await {
+                Ok(_) => (),
+                Err(_) => break,
+            },
+            SubscriberMessage::Stop => break,
         }
     }
 

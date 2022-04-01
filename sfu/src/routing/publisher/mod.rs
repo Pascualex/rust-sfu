@@ -7,4 +7,4 @@ mod publisher_loop;
 mod publisher_message;
 
 pub type PublisherAddress = tokio::sync::mpsc::Sender<PublisherMessage>;
-pub type PublisherMailbox = tokio::sync::mpsc::Receiver<PublisherMessage>;
+type PublisherMailbox = tokio::sync::mpsc::Receiver<PublisherMessage>;

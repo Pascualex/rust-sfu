@@ -7,4 +7,4 @@ mod subscriber_loop;
 mod subscriber_message;
 
 pub type SubscriberAddress = tokio::sync::mpsc::Sender<SubscriberMessage>;
-pub type SubscriberMailbox = tokio::sync::mpsc::Receiver<SubscriberMessage>;
+type SubscriberMailbox = tokio::sync::mpsc::Receiver<SubscriberMessage>;

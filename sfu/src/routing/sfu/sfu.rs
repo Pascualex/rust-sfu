@@ -1,53 +1,81 @@
-use tokio::{sync::mpsc, task};
-
 use crate::{
     routing::{
-        publisher::{publisher_loop, Publisher, PublisherAddress},
+        publisher::{publisher_loop, Publisher, PublisherAddress, PublisherMessage},
         subscriber::{subscriber_loop, Subscriber, SubscriberAddress, SubscriberMessage},
+        MAX_SUBSCRIPTIONS,
     },
     transport::{DataReceiver, DataSender},
 };
 
 pub struct Sfu {
-    publisher_addrs: Vec<PublisherAddress>,
-    subscriber_addrs: Vec<SubscriberAddress>,
+    publishers: Vec<PublisherAddress>,
+    subscribers: Vec<(SubscriberAddress, Vec<PublisherAddress>)>,
 }
 
 impl Sfu {
     pub fn new() -> Self {
         Self {
-            publisher_addrs: Vec::new(),
-            subscriber_addrs: Vec::new(),
+            publishers: Vec::new(),
+            subscribers: Vec::new(),
         }
     }
 
-    pub async fn create_publisher(&mut self, data_rcvr: DataReceiver) {
-        let (publisher_addr, publisher_mailbox) = mpsc::channel(100);
+    pub async fn create_publisher(&mut self, receiver: DataReceiver) {
+        let (address, mailbox) = tokio::sync::mpsc::channel(100);
         let publisher = Publisher::new();
-        task::spawn(publisher_loop(publisher, publisher_mailbox, data_rcvr));
+        tokio::task::spawn(publisher_loop(publisher, mailbox, receiver));
 
-        for subscriber_addr in self.subscriber_addrs.iter() {
-            let message = SubscriberMessage::Subscription(publisher_addr.clone());
-            subscriber_addr.send(message).await.ok(); // todo
+        let publisher = address;
+
+        for (subscriber, subscriptions) in self.subscribers.iter_mut() {
+            Self::subscribe(subscriber, &publisher, subscriptions).await;
         }
-        self.publisher_addrs.push(publisher_addr);
+
+        self.publishers.push(publisher);
     }
 
-    pub async fn create_subscriber(&mut self, data_sndr: DataSender) {
-        let (subscriber_addr, subscriber_mailbox) = mpsc::channel(100);
-        let subscriber = Subscriber::new(subscriber_addr.clone(), data_sndr);
-        task::spawn(subscriber_loop(subscriber, subscriber_mailbox));
+    pub async fn create_subscriber(&mut self, sender: DataSender) {
+        let (address, mailbox) = tokio::sync::mpsc::channel(100);
+        let subscriber = Subscriber::new(sender);
+        tokio::task::spawn(subscriber_loop(subscriber, mailbox));
 
-        for publisher_addr in self.publisher_addrs.iter() {
-            let message = SubscriberMessage::Subscription(publisher_addr.clone());
-            subscriber_addr.send(message).await.ok(); // todo
+        let subscriber = address;
+        let mut subscriptions = Vec::new();
+
+        for publisher in self.publishers.iter() {
+            Self::subscribe(&subscriber, publisher, &mut subscriptions).await;
         }
 
-        self.subscriber_addrs.push(subscriber_addr);
+        self.subscribers.push((subscriber, subscriptions));
+    }
+
+    pub async fn subscribe(
+        subscriber: &SubscriberAddress,
+        publisher: &PublisherAddress,
+        subscriptions: &mut Vec<PublisherAddress>,
+    ) {
+        if subscriptions.len() < MAX_SUBSCRIPTIONS {
+            let message = PublisherMessage::Subscriber(subscriber.clone());
+            publisher.send(message).await.ok(); // todo
+
+            subscriptions.push(publisher.clone());
+        }
     }
 
     pub fn keepalive(&mut self) {
-        self.publisher_addrs.retain(|p| !p.is_closed());
-        self.subscriber_addrs.retain(|s| !s.is_closed());
+        self.publishers.retain(|p| !p.is_closed());
+        self.subscribers.retain(|(s, _)| !s.is_closed());
+    }
+
+    pub async fn stop(&mut self) {
+        for publisher in self.publishers.iter() {
+            let message = PublisherMessage::Stop;
+            publisher.send(message).await.ok(); // todo
+        }
+
+        for (subscriber, _) in self.subscribers.iter() {
+            let message = SubscriberMessage::Stop;
+            subscriber.send(message).await.ok(); // todo
+        }
     }
 }

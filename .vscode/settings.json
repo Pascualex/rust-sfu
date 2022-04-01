@@ -2,14 +2,12 @@
     "files.exclude": {
         "**/Cargo.lock": true,
         "**/target": true,
-        "**/pkg": true,
     },
     "editor.codeLens": false,
     "cSpell.words": [
-        "actix",
         "addrs",
         "alpn",
-        "Arraybuffer",
+        "arraybuffer",
         "bincode",
         "bindgen",
         "clippy",

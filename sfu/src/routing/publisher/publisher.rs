@@ -20,8 +20,8 @@ impl Publisher {
         self.subscribers.push(subscriber);
     }
 
-    pub async fn publish(&mut self, data: Data) {
-        for subscriber in &self.subscribers {
+    pub async fn send(&mut self, data: Data) {
+        for subscriber in self.subscribers.iter() {
             let message = SubscriberMessage::Data(Arc::clone(&data));
             subscriber.send(message).await.ok(); // todo
         }
