@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 
 use futures_util::StreamExt;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::mpsc};
+use uuid::Uuid;
 
 use crate::{
     routing::{sfu_loop, Sfu, SfuMessage},
@@ -17,9 +18,9 @@ async fn main() {
     let socket_addr = "[::]:8085".parse::<SocketAddr>().unwrap();
     let listener = TcpListener::bind(socket_addr).await.unwrap();
 
-    let (address, mailbox) = tokio::sync::mpsc::channel(100);
-    let publisher = Sfu::new();
-    tokio::task::spawn(sfu_loop(publisher, mailbox));
+    let actor = Sfu::new();
+    let (address, mailbox) = mpsc::channel(100);
+    tokio::task::spawn(sfu_loop(actor, mailbox));
 
     let sfu = address;
 
@@ -33,10 +34,12 @@ async fn main() {
         let receiver = DataReceiver::new(ws_stream);
         let sender = DataSender::new(ws_sink);
 
-        let message = SfuMessage::CreatePublisher(receiver);
+        let id = Uuid::new_v4();
+
+        let message = SfuMessage::CreatePublisher(id, receiver);
         sfu.send(message).await.ok(); // todo
 
-        let message = SfuMessage::CreateSubscriber(sender);
+        let message = SfuMessage::CreateSubscriber(id, sender);
         sfu.send(message).await.ok(); // todo
     }
 

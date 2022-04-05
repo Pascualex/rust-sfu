@@ -1,8 +1,7 @@
-use crate::{routing::subscriber::SubscriberAddress, transport::Data};
+use crate::transport::Data;
 
 pub enum PublisherMessage {
     Data(Data),
-    Subscriber(SubscriberAddress),
     Keepalive,
     Stop,
 }

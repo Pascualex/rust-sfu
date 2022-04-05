@@ -27,6 +27,7 @@
         "sctp",
         "sndr",
         "tokio",
-        "tungstenite"
+        "tungstenite",
+        "uuid"
     ],
 }

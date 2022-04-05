@@ -1,81 +1,71 @@
+use std::collections::HashMap;
+
+use tokio::sync::mpsc;
+use uuid::Uuid;
+
 use crate::{
     routing::{
-        publisher::{publisher_loop, Publisher, PublisherAddress, PublisherMessage},
-        subscriber::{subscriber_loop, Subscriber, SubscriberAddress, SubscriberMessage},
-        MAX_SUBSCRIPTIONS,
+        board::{board_loop, Board, BoardAddress, BoardMessage},
+        publisher::{publisher_loop, Publisher, PublisherMessage},
+        routing_error::RoutingError,
     },
     transport::{DataReceiver, DataSender},
 };
 
+use super::info::PublisherState;
+
 pub struct Sfu {
-    publishers: Vec<PublisherAddress>,
-    subscribers: Vec<(SubscriberAddress, Vec<PublisherAddress>)>,
+    board: BoardAddress,
+    publishers: HashMap<Uuid, PublisherState>,
 }
 
 impl Sfu {
     pub fn new() -> Self {
+        let (address, mailbox) = mpsc::channel(100);
+        let actor = Board::new();
+        tokio::task::spawn(board_loop(actor, mailbox));
+
         Self {
-            publishers: Vec::new(),
-            subscribers: Vec::new(),
+            board: address,
+            publishers: HashMap::new(),
         }
     }
 
-    pub async fn create_publisher(&mut self, receiver: DataReceiver) {
-        let (address, mailbox) = tokio::sync::mpsc::channel(100);
-        let publisher = Publisher::new();
-        tokio::task::spawn(publisher_loop(publisher, mailbox, receiver));
+    pub async fn create_publisher(&mut self, id: Uuid, receiver: DataReceiver) {
+        let actor = Publisher::new(id, self.board.clone());
+        let (address, mailbox) = mpsc::channel(100);
+        tokio::task::spawn(publisher_loop(actor, mailbox, receiver));
 
-        let publisher = address;
+        let publisher = PublisherState::new(address);
 
-        for (subscriber, subscriptions) in self.subscribers.iter_mut() {
-            Self::subscribe(subscriber, &publisher, subscriptions).await;
-        }
-
-        self.publishers.push(publisher);
+        self.publishers.insert(id, publisher);
     }
 
-    pub async fn create_subscriber(&mut self, sender: DataSender) {
-        let (address, mailbox) = tokio::sync::mpsc::channel(100);
-        let subscriber = Subscriber::new(sender);
-        tokio::task::spawn(subscriber_loop(subscriber, mailbox));
-
-        let subscriber = address;
-        let mut subscriptions = Vec::new();
-
-        for publisher in self.publishers.iter() {
-            Self::subscribe(&subscriber, publisher, &mut subscriptions).await;
-        }
-
-        self.subscribers.push((subscriber, subscriptions));
+    pub async fn create_subscriber(
+        &mut self,
+        id: Uuid,
+        sender: DataSender,
+    ) -> Result<(), RoutingError> {
+        let message = BoardMessage::CreateSubscriber(id, sender);
+        Ok(self.board.send(message).await?)
     }
 
-    pub async fn subscribe(
-        subscriber: &SubscriberAddress,
-        publisher: &PublisherAddress,
-        subscriptions: &mut Vec<PublisherAddress>,
-    ) {
-        if subscriptions.len() < MAX_SUBSCRIPTIONS {
-            let message = PublisherMessage::Subscriber(subscriber.clone());
-            publisher.send(message).await.ok(); // todo
+    pub fn keepalive(&mut self) -> Result<(), RoutingError> {
+        self.publishers.retain(|_, p| !p.address.is_closed());
 
-            subscriptions.push(publisher.clone());
+        match self.board.is_closed() {
+            true => Err(RoutingError::ChannelClosed),
+            false => Ok(()),
         }
-    }
-
-    pub fn keepalive(&mut self) {
-        self.publishers.retain(|p| !p.is_closed());
-        self.subscribers.retain(|(s, _)| !s.is_closed());
     }
 
     pub async fn stop(&mut self) {
-        for publisher in self.publishers.iter() {
-            let message = PublisherMessage::Stop;
-            publisher.send(message).await.ok(); // todo
-        }
+        let message = BoardMessage::Stop;
+        self.board.send(message).await.ok(); // todo
 
-        for (subscriber, _) in self.subscribers.iter() {
-            let message = SubscriberMessage::Stop;
-            subscriber.send(message).await.ok(); // todo
+        for publisher in self.publishers.values() {
+            let message = PublisherMessage::Stop;
+            publisher.address.send(message).await.ok(); // todo
         }
     }
 }

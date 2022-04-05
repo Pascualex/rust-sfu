@@ -1,6 +1,8 @@
 pub use sfu::*;
 
+mod board;
 mod publisher;
+mod router;
 mod routing_error;
 mod sfu;
 mod subscriber;

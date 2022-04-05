@@ -14,21 +14,22 @@ pub async fn publisher_loop(
     mut mailbox: PublisherMailbox,
     mut receiver: DataReceiver,
 ) {
-    println!("Publisher loop starts");
+    println!("Publisher loop starts ({})", publisher.id);
 
     let mut keepalive = interval(Duration::from_secs_f32(KEEPALIVE_INTERVAL));
     keepalive.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     while let Some(message) = recv(&mut mailbox, &mut receiver, &mut keepalive).await {
         match message {
-            PublisherMessage::Data(d) => publisher.send(d).await,
-            PublisherMessage::Subscriber(s) => publisher.add_subscriber(s),
+            PublisherMessage::Data(d) => publisher.route(d).await,
             PublisherMessage::Keepalive => publisher.keepalive(),
             PublisherMessage::Stop => break,
         }
     }
 
-    println!("Publisher loop stops");
+    publisher.stop().await;
+
+    println!("Publisher loop stops ({})", publisher.id);
 }
 
 async fn recv(

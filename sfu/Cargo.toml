@@ -7,3 +7,4 @@ edition = "2021"
 futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
 tokio = { version = "1.15.0", features = ["rt", "rt-multi-thread", "macros", "sync", "time"] }
 tokio-tungstenite = { version = "0.16.1", features = ["native-tls"] }
+uuid = { version = "0.8.2", features = ["v4"] }

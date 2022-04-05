@@ -10,14 +10,14 @@ use crate::routing::KEEPALIVE_INTERVAL;
 use super::{Subscriber, SubscriberMailbox, SubscriberMessage};
 
 pub async fn subscriber_loop(mut subscriber: Subscriber, mut mailbox: SubscriberMailbox) {
-    println!("Subscriber loop starts");
+    println!("Subscriber loop starts ({})", subscriber.id);
 
     let mut keepalive = interval(Duration::from_secs_f32(KEEPALIVE_INTERVAL));
     keepalive.set_missed_tick_behavior(MissedTickBehavior::Delay);
 
     while let Some(message) = recv(&mut mailbox, &mut keepalive).await {
         match message {
-            SubscriberMessage::Data(data) => match subscriber.send(data).await {
+            SubscriberMessage::Data(d) => match subscriber.send(d).await {
                 Ok(_) => (),
                 Err(_) => break,
             },
@@ -29,7 +29,7 @@ pub async fn subscriber_loop(mut subscriber: Subscriber, mut mailbox: Subscriber
         }
     }
 
-    println!("Subscriber loop stops");
+    println!("Subscriber loop stops ({})", subscriber.id);
 }
 
 async fn recv(

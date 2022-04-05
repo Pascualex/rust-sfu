@@ -17,9 +17,15 @@ pub async fn sfu_loop(mut sfu: Sfu, mut mailbox: SfuMailbox) {
 
     while let Some(message) = recv(&mut mailbox, &mut keepalive).await {
         match message {
-            SfuMessage::CreatePublisher(r) => sfu.create_publisher(r).await,
-            SfuMessage::CreateSubscriber(s) => sfu.create_subscriber(s).await,
-            SfuMessage::Keepalive => sfu.keepalive(),
+            SfuMessage::CreatePublisher(id, r) => sfu.create_publisher(id, r).await,
+            SfuMessage::CreateSubscriber(id, s) => match sfu.create_subscriber(id, s).await {
+                Ok(_) => (),
+                Err(_) => break,
+            },
+            SfuMessage::Keepalive => match sfu.keepalive() {
+                Ok(_) => (),
+                Err(_) => break,
+            },
             SfuMessage::Stop => break,
         }
     }
