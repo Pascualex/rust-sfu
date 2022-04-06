@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use tokio::sync::mpsc;
 use uuid::Uuid;
@@ -29,11 +29,14 @@ impl Board {
 
     pub async fn create_router(&mut self, id: Uuid, publisher_id: Uuid, channel: RouterChannel) {
         let mut actor = Router::new(publisher_id);
+        let mut router_subscribers = HashSet::new();
 
         for (subscriber_id, subscriber) in self.subscribers.iter_mut() {
             if *subscriber_id != publisher_id && subscriber.routers.len() < MAX_SUBSCRIPTIONS {
                 let subscriber_address = subscriber.address.clone();
                 actor.add_subscriber(*subscriber_id, subscriber_address);
+
+                router_subscribers.insert(*subscriber_id);
                 subscriber.routers.insert(id);
             }
         }
@@ -41,7 +44,7 @@ impl Board {
         let (address, mailbox) = channel;
         tokio::task::spawn(router_loop(actor, mailbox));
 
-        let router = RouterState::new(address, publisher_id);
+        let router = RouterState::new(address, publisher_id, router_subscribers);
         self.routers.insert(id, router);
     }
 
@@ -52,11 +55,13 @@ impl Board {
 
         let mut subscriber = SubscriberState::new(address);
 
-        for (router_id, router) in self.routers.iter() {
+        for (router_id, router) in self.routers.iter_mut() {
             if router.publisher != id && subscriber.routers.len() < MAX_SUBSCRIPTIONS {
                 let subscriber_address = subscriber.address.clone();
                 let message = RouterMessage::Subscriber(id, subscriber_address);
                 router.address.send(message).await.ok(); // todo
+
+                router.subscribers.insert(id);
                 subscriber.routers.insert(*router_id);
             }
         }

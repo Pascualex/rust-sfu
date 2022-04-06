@@ -11,11 +11,11 @@ pub struct RouterState {
 }
 
 impl RouterState {
-    pub fn new(address: RouterAddress, publisher: Uuid) -> Self {
+    pub fn new(address: RouterAddress, publisher: Uuid, subscribers: HashSet<Uuid>) -> Self {
         Self {
             address,
             publisher,
-            subscribers: HashSet::new(),
+            subscribers,
         }
     }
 }
