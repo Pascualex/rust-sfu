@@ -2,11 +2,11 @@ use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::{
+    endpoints::Data,
     routing::{
         board::{BoardAddress, BoardMessage},
         router::{RouterAddress, RouterMessage},
     },
-    transport::Data,
 };
 
 pub struct Publisher {

@@ -1,10 +1,10 @@
 use uuid::Uuid;
 
-use crate::transport::{DataReceiver, DataSender};
+use crate::endpoints::{PublisherEndpoint, SubscriberEndpoint};
 
 pub enum SfuMessage {
-    CreatePublisher(Uuid, DataReceiver),
-    CreateSubscriber(Uuid, DataSender),
+    CreatePublisher(Uuid, PublisherEndpoint),
+    CreateSubscriber(Uuid, SubscriberEndpoint),
     Keepalive,
     Stop,
 }

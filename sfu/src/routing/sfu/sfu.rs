@@ -4,12 +4,12 @@ use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::{
+    endpoints::{PublisherEndpoint, SubscriberEndpoint},
     routing::{
         board::{board_loop, Board, BoardAddress, BoardMessage},
         publisher::{publisher_loop, Publisher, PublisherMessage},
         routing_error::RoutingError,
     },
-    transport::{DataReceiver, DataSender},
 };
 
 use super::info::PublisherState;
@@ -31,10 +31,10 @@ impl Sfu {
         }
     }
 
-    pub async fn create_publisher(&mut self, id: Uuid, receiver: DataReceiver) {
+    pub async fn create_publisher(&mut self, id: Uuid, endpoint: PublisherEndpoint) {
         let actor = Publisher::new(id, self.board.clone());
         let (address, mailbox) = mpsc::channel(100);
-        tokio::task::spawn(publisher_loop(actor, mailbox, receiver));
+        tokio::task::spawn(publisher_loop(actor, mailbox, endpoint));
 
         let publisher = PublisherState::new(address);
 
@@ -44,9 +44,9 @@ impl Sfu {
     pub async fn create_subscriber(
         &mut self,
         id: Uuid,
-        sender: DataSender,
+        endpoint: SubscriberEndpoint,
     ) -> Result<(), RoutingError> {
-        let message = BoardMessage::CreateSubscriber(id, sender);
+        let message = BoardMessage::CreateSubscriber(id, endpoint);
         Ok(self.board.send(message).await?)
     }
 

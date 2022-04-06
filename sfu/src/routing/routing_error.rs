@@ -1,13 +1,13 @@
 use tokio::sync::mpsc::error::SendError;
 
-use crate::transport::TransportError;
+use crate::endpoints::EndpointError;
 
 pub enum RoutingError {
     ChannelClosed,
 }
 
-impl From<TransportError> for RoutingError {
-    fn from(_: TransportError) -> Self {
+impl From<EndpointError> for RoutingError {
+    fn from(_: EndpointError) -> Self {
         Self::ChannelClosed
     }
 }

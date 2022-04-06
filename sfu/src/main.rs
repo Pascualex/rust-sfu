@@ -5,12 +5,12 @@ use tokio::{net::TcpListener, sync::mpsc};
 use uuid::Uuid;
 
 use crate::{
+    endpoints::{PublisherEndpoint, SubscriberEndpoint},
     routing::{sfu_loop, Sfu, SfuMessage},
-    transport::{DataReceiver, DataSender},
 };
 
+mod endpoints;
 mod routing;
-mod transport;
 
 #[tokio::main(flavor = "current_thread")]
 // #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
@@ -31,15 +31,15 @@ async fn main() {
         println!("WebSocket connection established with: {}", incoming_addr);
 
         let (ws_sink, ws_stream) = ws_stream.split();
-        let receiver = DataReceiver::new(ws_stream);
-        let sender = DataSender::new(ws_sink);
+        let publisher_endpoint = PublisherEndpoint::new(ws_stream);
+        let subscriber_endpoint = SubscriberEndpoint::new(ws_sink);
 
         let id = Uuid::new_v4();
 
-        let message = SfuMessage::CreatePublisher(id, receiver);
+        let message = SfuMessage::CreatePublisher(id, publisher_endpoint);
         sfu.send(message).await.ok(); // todo
 
-        let message = SfuMessage::CreateSubscriber(id, sender);
+        let message = SfuMessage::CreateSubscriber(id, subscriber_endpoint);
         sfu.send(message).await.ok(); // todo
     }
 

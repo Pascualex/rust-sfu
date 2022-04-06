@@ -1,25 +1,25 @@
 use uuid::Uuid;
 
 use crate::{
+    endpoints::{Data, SubscriberEndpoint},
     routing::routing_error::RoutingError,
-    transport::{Data, DataSender},
 };
 
 pub struct Subscriber {
     pub id: Uuid,
-    sender: DataSender,
+    endpoint: SubscriberEndpoint,
 }
 
 impl Subscriber {
-    pub fn new(id: Uuid, sender: DataSender) -> Self {
-        Self { id, sender }
+    pub fn new(id: Uuid, endpoint: SubscriberEndpoint) -> Self {
+        Self { id, endpoint }
     }
 
     pub async fn send(&mut self, data: Data) -> Result<(), RoutingError> {
-        Ok(self.sender.send(data).await?)
+        Ok(self.endpoint.send(data).await?)
     }
 
     pub async fn keepalive(&mut self) -> Result<(), RoutingError> {
-        Ok(self.sender.keepalive().await?)
+        Ok(self.endpoint.keepalive().await?)
     }
 }

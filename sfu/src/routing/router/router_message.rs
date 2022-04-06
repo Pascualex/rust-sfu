@@ -1,6 +1,6 @@
 use uuid::Uuid;
 
-use crate::{routing::subscriber::SubscriberAddress, transport::Data};
+use crate::{endpoints::Data, routing::subscriber::SubscriberAddress};
 
 pub enum RouterMessage {
     Data(Data),

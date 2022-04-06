@@ -1,9 +1,9 @@
 use uuid::Uuid;
 
-use crate::{transport::DataSender, routing::router::RouterChannel};
+use crate::{endpoints::SubscriberEndpoint, routing::router::RouterChannel};
 
 pub enum BoardMessage {
-    CreateSubscriber(Uuid, DataSender),
+    CreateSubscriber(Uuid, SubscriberEndpoint),
     CreateRouter(Uuid, Uuid, RouterChannel),
     Keepalive,
     Stop,

@@ -3,8 +3,8 @@ use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 
 use crate::{
+    endpoints::Data,
     routing::subscriber::{SubscriberAddress, SubscriberMessage},
-    transport::Data,
 };
 
 pub struct Router {

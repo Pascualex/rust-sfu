@@ -1,4 +1,4 @@
-use crate::transport::Data;
+use crate::endpoints::Data;
 
 pub enum SubscriberMessage {
     Data(Data),

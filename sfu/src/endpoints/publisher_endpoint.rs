@@ -6,11 +6,11 @@ use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 
 use super::Data;
 
-pub struct DataReceiver {
+pub struct PublisherEndpoint {
     split_stream: SplitStream<WebSocketStream<TcpStream>>,
 }
 
-impl DataReceiver {
+impl PublisherEndpoint {
     pub fn new(split_stream: SplitStream<WebSocketStream<TcpStream>>) -> Self {
         Self { split_stream }
     }

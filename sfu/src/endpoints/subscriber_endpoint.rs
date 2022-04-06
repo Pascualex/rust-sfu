@@ -5,33 +5,33 @@ use tokio_tungstenite::{
     WebSocketStream,
 };
 
-use super::{Data, TransportError};
+use super::{Data, EndpointError};
 
-pub struct DataSender {
+pub struct SubscriberEndpoint {
     split_sink: SplitSink<WebSocketStream<TcpStream>, Message>,
 }
 
-impl DataSender {
+impl SubscriberEndpoint {
     pub fn new(split_sink: SplitSink<WebSocketStream<TcpStream>, Message>) -> Self {
         Self { split_sink }
     }
 
-    pub async fn send(&mut self, data: Data) -> Result<(), TransportError> {
+    pub async fn send(&mut self, data: Data) -> Result<(), EndpointError> {
         self.send_message(Message::Binary((*data).clone())).await
     }
 
-    pub async fn keepalive(&mut self) -> Result<(), TransportError> {
+    pub async fn keepalive(&mut self) -> Result<(), EndpointError> {
         self.send_message(Message::Ping(vec![])).await
     }
 
-    async fn send_message(&mut self, message: Message) -> Result<(), TransportError> {
+    async fn send_message(&mut self, message: Message) -> Result<(), EndpointError> {
         match self.split_sink.send(message).await {
             Ok(()) => Ok(()),
             Err(tungstenite::Error::SendQueueFull(_)) => {
                 println!("Send queue full");
                 Ok(())
             }
-            Err(_) => Err(TransportError),
+            Err(_) => Err(EndpointError),
         }
     }
 }

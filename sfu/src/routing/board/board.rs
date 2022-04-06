@@ -4,17 +4,15 @@ use tokio::sync::mpsc;
 use uuid::Uuid;
 
 use crate::{
+    endpoints::SubscriberEndpoint,
     routing::{
-        router::{router_loop, Router, RouterMessage, RouterChannel},
+        router::{router_loop, Router, RouterChannel, RouterMessage},
         subscriber::{subscriber_loop, Subscriber, SubscriberMessage},
         MAX_SUBSCRIPTIONS,
     },
-    transport::DataSender,
 };
 
-use super::{
-    state::{RouterState, SubscriberState},
-};
+use super::state::{RouterState, SubscriberState};
 
 pub struct Board {
     routers: HashMap<Uuid, RouterState>,
@@ -47,8 +45,8 @@ impl Board {
         self.routers.insert(id, router);
     }
 
-    pub async fn create_subscriber(&mut self, id: Uuid, sender: DataSender) {
-        let actor = Subscriber::new(id, sender);
+    pub async fn create_subscriber(&mut self, id: Uuid, endpoint: SubscriberEndpoint) {
+        let actor = Subscriber::new(id, endpoint);
         let (address, mailbox) = mpsc::channel(100);
         tokio::task::spawn(subscriber_loop(actor, mailbox));
 
