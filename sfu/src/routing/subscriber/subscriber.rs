@@ -15,8 +15,8 @@ impl Subscriber {
         Self { id, endpoint }
     }
 
-    pub async fn send(&mut self, data: Data) -> Result<(), RoutingError> {
-        Ok(self.endpoint.send(data).await?)
+    pub async fn send(&mut self, track_id: Uuid, data: Data) -> Result<(), RoutingError> {
+        Ok(self.endpoint.send(track_id, data).await?)
     }
 
     pub async fn keepalive(&mut self) -> Result<(), RoutingError> {

@@ -2,7 +2,9 @@ use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use std::{
     cmp::min,
     io::{stdout, Write},
@@ -10,7 +12,7 @@ use std::{
 use tokio::{
     net::TcpStream,
     task::JoinHandle,
-    time::{interval, Duration, Instant, MissedTickBehavior},
+    time::{interval, Duration, Instant, MissedTickBehavior, sleep},
 };
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use url::Url;
@@ -26,7 +28,7 @@ type Producer = SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>;
 async fn main() {
     let clients = 150;
     let max_subs = 49;
-    let duration = Duration::from_secs(30);
+    let duration = Duration::from_secs(5);
     let size = 30_000;
     let freq = 24;
 
@@ -38,11 +40,11 @@ async fn main() {
     println!("  - Duration: {} s", duration.as_secs());
 
     let c_up = size * freq;
-    let c_down = size * freq * min(clients, max_subs);
+    let c_down = size * freq * min(clients - 1, max_subs);
     let cs_up = c_up * clients;
     let cs_down = c_down * clients;
 
-    println!("Data bandwidths:");
+    println!("Bandwidths:");
     println!("  - Client upstream: {}ps", format_bit(c_up));
     println!("  - Client downstream: {}ps", format_bit(c_down));
     println!("  - Clients upstream: {}ps", format_bit(cs_up));
@@ -52,18 +54,18 @@ async fn main() {
     let ws_streams = connect_clients(url, clients).await;
 
     let iter = (0..(size / 8)).map(|n| (n % u8::MAX as u64) as u8);
-    let data = iter.collect::<Vec<u8>>();
-    let (send_handles, recv_handles) = start_test(ws_streams, data, freq, duration).await;
+    let bytes = iter.collect::<Vec<u8>>();
+    let (send_handles, recv_handles) = start_test(ws_streams, bytes, freq, duration).await;
 
     print_progress(duration).await;
 
     let (send_count, recv_count, rtt) = get_results(send_handles, recv_handles).await;
     let send_expected = duration.as_secs() as u64 * freq * clients;
     let send_percentage = (send_count as f64 / send_expected as f64) * 100f64;
-    let recv_expected = send_expected * min(clients, max_subs);
+    let recv_expected = send_expected * min(clients - 1, max_subs);
     let recv_percentage = (recv_count as f64 / recv_expected as f64) * 100f64;
 
-    println!("Test finished:");
+    println!("Results:");
     println!(
         "  - Send: {} / {} ({:.2}%)",
         send_count, send_expected, send_percentage
@@ -72,7 +74,7 @@ async fn main() {
         "  - Recv: {} / {} ({:.2}%)",
         recv_count, recv_expected, recv_percentage
     );
-    println!("  - RTT: {} ms", rtt);
+    println!("  - RTT: {} μs", rtt);
 }
 
 async fn connect_clients(url: Url, count: u64) -> Vec<WebSocketStream<MaybeTlsStream<TcpStream>>> {
@@ -86,7 +88,7 @@ async fn connect_clients(url: Url, count: u64) -> Vec<WebSocketStream<MaybeTlsSt
 
 async fn start_test(
     ws_streams: Vec<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    data: Vec<u8>,
+    bytes: Vec<u8>,
     freq: u64,
     duration: Duration,
 ) -> (Vec<JoinHandle<u64>>, Vec<JoinHandle<(u64, u128)>>) {
@@ -96,9 +98,9 @@ async fn start_test(
     let start = Instant::now();
     for ws_stream in ws_streams {
         let (consumer, producer) = ws_stream.split();
-        let send_fut = send(consumer, data.clone(), freq, total, start, duration);
+        let send_fut = send(consumer, bytes.clone(), freq, total, start, duration);
         send_handles.push(tokio::spawn(send_fut));
-        let recv_fut = recv(producer, data.clone(), start, duration);
+        let recv_fut = recv(producer, bytes.clone(), start, duration);
         recv_handles.push(tokio::spawn(recv_fut));
     }
     (send_handles, recv_handles)
@@ -106,14 +108,18 @@ async fn start_test(
 
 async fn send(
     mut consumer: Consumer,
-    data: Vec<u8>,
+    bytes: Vec<u8>,
     freq: u64,
     total: u64,
     start: Instant,
     duration: Duration,
 ) -> u64 {
+    let track_id = Uuid::new_v4();
+    let interval_μs = 1_000_000 / freq as u64;
+    let sleep_μs = rand::thread_rng().gen_range(0..interval_μs);
+    sleep(Duration::from_micros(sleep_μs)).await;
     let finish = start + duration + Duration::from_secs(1);
-    let mut interval = interval(Duration::from_millis(1000 / freq as u64));
+    let mut interval = interval(Duration::from_micros(interval_μs));
     interval.set_missed_tick_behavior(MissedTickBehavior::Burst);
     let mut count = 0;
     for _ in 0..total {
@@ -121,8 +127,9 @@ async fn send(
             break;
         }
         interval.tick().await;
-        let packet = Packet::new(data.clone(), start.elapsed());
-        let packet = bincode::serialize(&packet).unwrap();
+        let data = Data::new(bytes.clone(), start.elapsed());
+        let data = bincode::serialize(&data).unwrap();
+        let packet = bincode::serialize(&(track_id, data)).unwrap();
         let message = Message::Binary(packet);
         if consumer.send(message).await.is_err() {
             break;
@@ -134,7 +141,7 @@ async fn send(
 
 async fn recv(
     mut producer: Producer,
-    data: Vec<u8>,
+    bytes: Vec<u8>,
     start: Instant,
     duration: Duration,
 ) -> (u64, u128) {
@@ -146,10 +153,11 @@ async fn recv(
             break;
         }
         match result {
-            Ok(Message::Binary(recv_packet)) => {
-                let recv_packet = bincode::deserialize::<Packet>(&recv_packet).unwrap();
-                let rtt = (start.elapsed() - recv_packet.duration).as_millis();
-                if recv_packet.data != data {
+            Ok(Message::Binary(packet)) => {
+                let (_, data) = bincode::deserialize::<(Uuid, Vec<u8>)>(&packet).unwrap();
+                let data = bincode::deserialize::<Data>(&data).unwrap();
+                let rtt = (start.elapsed() - data.elapsed).as_micros();
+                if data.bytes != bytes {
                     panic!("Packet received is corrupted");
                 }
                 count += 1;
@@ -165,9 +173,9 @@ async fn recv(
 async fn print_progress(duration: Duration) {
     let mut interval = interval(Duration::from_secs(1));
     interval.set_missed_tick_behavior(MissedTickBehavior::Burst);
-    for i in 0..duration.as_secs() {
+    for i in 0..=duration.as_secs() {
         interval.tick().await;
-        print!("Running for {} of {} seconds\r", i + 1, duration.as_secs());
+        print!("Running for {} of {} seconds\r", i, duration.as_secs());
         stdout().flush().unwrap();
     }
     println!();
@@ -204,13 +212,13 @@ fn format_bit(size: u64) -> String {
 }
 
 #[derive(Serialize, Deserialize)]
-struct Packet {
-    data: Vec<u8>,
-    duration: Duration,
+struct Data {
+    bytes: Vec<u8>,
+    elapsed: Duration,
 }
 
-impl Packet {
-    pub fn new(data: Vec<u8>, duration: Duration) -> Self {
-        Self { data, duration }
+impl Data {
+    pub fn new(bytes: Vec<u8>, elapsed: Duration) -> Self {
+        Self { bytes, elapsed }
     }
 }

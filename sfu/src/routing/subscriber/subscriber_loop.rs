@@ -17,7 +17,7 @@ pub async fn subscriber_loop(mut subscriber: Subscriber, mut mailbox: Subscriber
 
     while let Some(message) = recv(&mut mailbox, &mut keepalive).await {
         match message {
-            SubscriberMessage::Data(d) => match subscriber.send(d).await {
+            SubscriberMessage::Data(id, d) => match subscriber.send(id, d).await {
                 Ok(_) => (),
                 Err(_) => break,
             },

@@ -4,6 +4,7 @@ use tokio_tungstenite::{
     tungstenite::{self, Message},
     WebSocketStream,
 };
+use uuid::Uuid;
 
 use super::{Data, EndpointError};
 
@@ -16,8 +17,10 @@ impl SubscriberEndpoint {
         Self { split_sink }
     }
 
-    pub async fn send(&mut self, data: Data) -> Result<(), EndpointError> {
-        self.send_message(Message::Binary((*data).clone())).await
+    pub async fn send(&mut self, track_id: Uuid, data: Data) -> Result<(), EndpointError> {
+        let data = (*data).clone();
+        let binary = bincode::serialize(&(track_id, data)).unwrap();
+        self.send_message(Message::Binary(binary)).await
     }
 
     pub async fn keepalive(&mut self) -> Result<(), EndpointError> {

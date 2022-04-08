@@ -21,7 +21,7 @@ pub async fn publisher_loop(
 
     while let Some(message) = recv(&mut mailbox, &mut endpoint, &mut keepalive).await {
         match message {
-            PublisherMessage::Data(d) => publisher.route(d).await,
+            PublisherMessage::Data(id, d) => publisher.route(id, d).await,
             PublisherMessage::Keepalive => publisher.keepalive(),
             PublisherMessage::Stop => break,
         }
@@ -39,7 +39,7 @@ async fn recv(
 ) -> Option<PublisherMessage> {
     select! {
         message = mailbox.recv() => message,
-        data = endpoint.recv() => data.map(PublisherMessage::Data),
+        data = endpoint.recv() => data.map(|(id, d)| PublisherMessage::Data(id, d)),
         _ = keepalive.tick() => Some(PublisherMessage::Keepalive),
     }
 }

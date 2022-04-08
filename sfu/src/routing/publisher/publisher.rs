@@ -1,3 +1,5 @@
+use std::collections::{hash_map::Entry, HashMap};
+
 use tokio::sync::mpsc;
 use uuid::Uuid;
 
@@ -11,7 +13,7 @@ use crate::{
 
 pub struct Publisher {
     pub id: Uuid,
-    routers: Vec<RouterAddress>,
+    routers: HashMap<Uuid, RouterAddress>,
     board: BoardAddress,
 }
 
@@ -19,25 +21,25 @@ impl Publisher {
     pub fn new(id: Uuid, board: BoardAddress) -> Self {
         Self {
             id,
-            routers: Vec::new(),
+            routers: HashMap::new(),
             board,
         }
     }
 
-    pub async fn route(&mut self, data: Data) {
-        if self.routers.is_empty() {
-            let id = Uuid::new_v4();
-            let (address, mailbox) = mpsc::channel(100);
-
-            self.routers.push(address.clone());
-
-            let channel = (address, mailbox);
-            let message = BoardMessage::CreateRouter(id, self.id, channel);
-            self.board.send(message).await.ok(); // todo
-        }
+    pub async fn route(&mut self, track_id: Uuid, data: Data) {
+        let router = match self.routers.entry(track_id) {
+            Entry::Occupied(o) => o.into_mut(),
+            Entry::Vacant(v) => {
+                let (address, mailbox) = mpsc::channel(100);
+                let channel = (address.clone(), mailbox);
+                let message = BoardMessage::CreateRouter(track_id, self.id, channel);
+                self.board.send(message).await.ok(); // todo
+                v.insert(address)
+            }
+        };
 
         let message = RouterMessage::Data(data);
-        self.routers[0].send(message).await.ok(); // todo
+        router.send(message).await.ok(); // todo
     }
 
     pub fn keepalive(&mut self) {
@@ -45,7 +47,7 @@ impl Publisher {
     }
 
     pub async fn stop(&mut self) {
-        for router in self.routers.iter() {
+        for router in self.routers.values() {
             let message = RouterMessage::Stop;
             router.send(message).await.ok(); // todo
         }

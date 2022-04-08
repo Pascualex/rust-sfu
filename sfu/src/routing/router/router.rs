@@ -22,7 +22,7 @@ impl Router {
 
     pub async fn route(&mut self, data: Data) {
         for subscriber in self.subscribers.values() {
-            let message = SubscriberMessage::Data(Arc::clone(&data));
+            let message = SubscriberMessage::Data(self.id, Arc::clone(&data));
             subscriber.send(message).await.ok();
         }
         self.subscribers.retain(|_, s| !s.is_closed());

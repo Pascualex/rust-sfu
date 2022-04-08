@@ -1,7 +1,9 @@
+use uuid::Uuid;
+
 use crate::endpoints::Data;
 
 pub enum SubscriberMessage {
-    Data(Data),
+    Data(Uuid, Data),
     Keepalive,
     Stop,
 }
