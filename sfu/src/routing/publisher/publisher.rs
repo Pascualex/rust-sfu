@@ -6,23 +6,23 @@ use uuid::Uuid;
 use crate::{
     endpoints::Data,
     routing::{
-        board::{BoardAddress, BoardMessage},
         router::{RouterAddress, RouterMessage},
+        subscription_manager::{SubscriptionManagerAddress, SubscriptionManagerMessage},
     },
 };
 
 pub struct Publisher {
     pub id: Uuid,
     routers: HashMap<Uuid, RouterAddress>,
-    board: BoardAddress,
+    subscription_manager: SubscriptionManagerAddress,
 }
 
 impl Publisher {
-    pub fn new(id: Uuid, board: BoardAddress) -> Self {
+    pub fn new(id: Uuid, subscription_manager: SubscriptionManagerAddress) -> Self {
         Self {
             id,
             routers: HashMap::new(),
-            board,
+            subscription_manager,
         }
     }
 
@@ -32,8 +32,8 @@ impl Publisher {
             Entry::Vacant(v) => {
                 let (address, mailbox) = mpsc::channel(100);
                 let channel = (address.clone(), mailbox);
-                let message = BoardMessage::CreateRouter(track_id, self.id, channel);
-                self.board.send(message).await.ok(); // todo
+                let message = SubscriptionManagerMessage::CreateRouter(track_id, self.id, channel);
+                self.subscription_manager.send(message).await.ok(); // todo
                 v.insert(address)
             }
         };

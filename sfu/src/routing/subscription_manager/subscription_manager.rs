@@ -14,12 +14,12 @@ use crate::{
 
 use super::state::{RouterState, SubscriberState};
 
-pub struct Board {
+pub struct SubscriptionManager {
     routers: HashMap<Uuid, RouterState>,
     subscribers: HashMap<Uuid, SubscriberState>,
 }
 
-impl Board {
+impl SubscriptionManager {
     pub fn new() -> Self {
         Self {
             routers: HashMap::new(),
