@@ -1,6 +1,6 @@
 * {
     box-sizing: border-box;
-    font-family: 
+    font-family:
         -apple-system, 
         BlinkMacSystemFont, 
         "Segoe UI", 
@@ -12,13 +12,7 @@
         sans-serif;
 }
 
-#offer {
-    width: 1000px;
-    word-wrap: break-word;
-}
-
-#answer {
-    width: 1000px;
-    height: 500px;
-    resize: vertical;
+body {
+    margin: 0;
+    padding: 0;
 }

@@ -1,0 +1,14 @@
+<h1>SFU web</h1>
+
+<app-participant class="local" *ngIf="localTrack != null" [track]="localTrack"></app-participant>
+
+<br><br>
+
+<p>Publishers: {{publishersCount}}</p>
+<button (click)="newParticipant()">New publisher</button>
+
+<br><br>
+
+<app-participant-grid>
+  <app-participant *ngFor="let track of remoteTracks" [track]="track"></app-participant>
+</app-participant-grid>
