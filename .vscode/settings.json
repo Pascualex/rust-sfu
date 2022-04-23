@@ -27,6 +27,7 @@
         "keepalive",
         "ontrack",
         "pemfile",
+        "playsinline",
         "quic",
         "rcvr",
         "recv",

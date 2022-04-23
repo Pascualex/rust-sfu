@@ -12,8 +12,8 @@ use crate::{
 mod endpoints;
 mod routing;
 
-// #[tokio::main(flavor = "current_thread")]
-#[tokio::main(flavor = "multi_thread", worker_threads = 8)]
+#[tokio::main(flavor = "current_thread")]
+// #[tokio::main(flavor = "multi_thread", worker_threads = 8)]
 async fn main() {
     let socket_addr = "[::]:8085".parse::<SocketAddr>().unwrap();
     let listener = TcpListener::bind(socket_addr).await.unwrap();

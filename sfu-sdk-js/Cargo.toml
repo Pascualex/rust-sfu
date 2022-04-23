@@ -1,0 +1,49 @@
+[package]
+name = "sfu-sdk-js"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+async-trait = "0.1.52"
+flume = "0.10.10"
+js-sys = "0.3.57"
+sfu-client = { path = "../sfu-client", version = "0.1.0" }
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+wasm-bindgen-futures = "0.4.29"
+
+[dependencies.web-sys]
+path = "../../web-sys"
+version = "0.3.57"
+features = [
+    "BinaryType",
+    "console",
+    "EncodedVideoChunk",
+    "EncodedVideoChunkInit",
+    "EncodedVideoChunkMetadata",
+    "EncodedVideoChunkType",
+    "FileReader",
+    "MediaStreamTrack",
+    "MediaStreamTrackGenerator",
+    "MediaStreamTrackGeneratorInit",
+    "MediaStreamTrackProcessor",
+    "MediaStreamTrackProcessorInit",
+    "MediaTrackSettings",
+    "MessageEvent",
+    "ReadableStream",
+    "ReadableStreamDefaultReader",
+    "VideoDecoder",
+    "VideoDecoderConfig",
+    "VideoDecoderInit",
+    "VideoEncoder",
+    "VideoEncoderConfig",
+    "VideoEncoderEncodeOptions",
+    "VideoEncoderInit",
+    "VideoDecoder",
+    "VideoFrame",
+    "WebSocket",
+    "WritableStream",
+    "WritableStreamDefaultWriter",
+]
