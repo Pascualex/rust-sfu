@@ -35,7 +35,7 @@ impl WcDecoder {
 
         let decoder = VideoDecoder::new(&init).unwrap(); // todo
 
-        let config = VideoDecoderConfig::new("vp8");
+        let config = VideoDecoderConfig::new("av01.0.01M.08");
         // config.coded_width(1280);
         // config.coded_height(720);
         decoder.configure(&config);

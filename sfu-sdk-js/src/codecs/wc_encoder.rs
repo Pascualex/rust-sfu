@@ -48,7 +48,7 @@ impl WcEncoder {
 
         let encoder = VideoEncoder::new(&init).unwrap(); // todo
 
-        let mut config = VideoEncoderConfig::new("vp8", height, width);
+        let mut config = VideoEncoderConfig::new("av01.0.01M.08", height, width);
         config.framerate(24.0);
         encoder.configure(&config);
 
