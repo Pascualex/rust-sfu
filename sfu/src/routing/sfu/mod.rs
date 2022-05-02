@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub use sfu::Sfu;
 pub use sfu_loop::sfu_loop;
 pub use sfu_message::SfuMessage;

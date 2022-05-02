@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub use router::Router;
 pub use router_loop::router_loop;
 pub use router_message::RouterMessage;

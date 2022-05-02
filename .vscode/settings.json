@@ -4,14 +4,6 @@
         "**/target": true,
     },
     "editor.codeLens": false,
-    "rust-analyzer.checkOnSave.overrideCommand": [
-        "cargo",
-        "clippy",
-        "--message-format=json",
-        "--",
-        "-A",
-        "clippy::module-inception"
-    ],
     "cSpell.words": [
         "addrs",
         "alpn",

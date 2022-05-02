@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub use subscription_manager::SubscriptionManager;
 pub use subscription_manager_loop::subscription_manager_loop;
 pub use subscription_manager_message::SubscriptionManagerMessage;

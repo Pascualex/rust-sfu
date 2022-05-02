@@ -1,3 +1,5 @@
+#![allow(clippy::module_inception)]
+
 pub use publisher::Publisher;
 pub use publisher_loop::publisher_loop;
 pub use publisher_message::PublisherMessage;
