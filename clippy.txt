@@ -1,1 +1,0 @@
-cargo clippy -- -A clippy::module-inception
