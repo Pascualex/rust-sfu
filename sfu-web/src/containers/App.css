@@ -1,0 +1,26 @@
+.background {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgb(40, 42, 43);
+}
+
+.web-title {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  margin: 0;
+  font-size: 20pt;
+  font-weight: normal;
+  color: white;
+}
+
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}

@@ -1,0 +1,16 @@
+.participant-grid {
+  max-width: 95vw;
+  height: 90vh;
+  aspect-ratio: 16/9;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+}
+
+.grid-participant-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
